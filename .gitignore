@@ -1,41 +1,32 @@
-# =============================================================================
-# GIT IGNORE FILE
-# Purpose: Tells Git which files/folders to NEVER track or commit.
-# Why it exists: Keeps the repository clean, small, and free of machine-
-# specific or auto-generated files that don't belong in version history.
-# =============================================================================
-
-# Dependency folders — these are auto-downloaded by npm/pip and can contain
-# tens of thousands of files. They're rebuilt from package.json/requirements.txt,
-# so tracking them in Git is unnecessary and would bloat the repo massively.
+# Dependencies
 node_modules/
 __pycache__/
 *.pyc
 
-# Build output — generated automatically when we compile/bundle the project.
-# Never hand-edited, always regenerated, so no reason to track it.
+# Build output
 dist/
+dist-ssr/
 build/
 
-# Environment variable files — these WILL eventually hold configuration
-# values. Even though this project won't use secret API keys, this is a
-# professional safety habit: NEVER let environment files enter Git history,
-# ever, on any project, even if they seem harmless today.
+# Environment and local overrides
 .env
 .env.local
+*.local
 
-# Editor/IDE-specific settings — these are personal to each developer's
-# machine (font size, extensions, etc.) and would create noisy, irrelevant
-# changes if tracked.
-.vscode/
+# Editor and IDE
+.vscode/*
+!.vscode/extensions.json
 .idea/
 
-# OS-generated junk files — Windows and Mac automatically create tiny hidden
-# files in folders (like thumbnail caches). These have nothing to do with
-# our project and clutter the repo if tracked.
+# OS files
 Thumbs.db
 .DS_Store
 
-# Log files — generated automatically while the app runs, constantly
-# changing, and not useful as permanent project history.
+# Logs
+logs/
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
