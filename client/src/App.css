@@ -14,3 +14,23 @@
   justify-content: center;
   text-align: center;
 }
+
+.code-editor {
+  width: min(90vw, 800px);
+  height: 400px;
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background-color: #1e1e1e;
+  color: #d4d4d4;
+  font-family: 'Consolas', 'Menlo', 'Monaco', monospace;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  border: 1px solid #3c3c3c;
+  border-radius: 6px;
+  resize: vertical;
+  outline: none;
+}
+
+.code-editor:focus {
+  border-color: #007acc;
+}
