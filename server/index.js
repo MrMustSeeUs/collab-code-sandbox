@@ -59,12 +59,17 @@ function handleNewConnection(currentClient) {
 //            which would otherwise throw an error.
 // -----------------------------------------------------------------------------
 function broadcastToOthers(sendingClient, message) {
+    // Convert the incoming buffer to a proper text string before relaying.
+    // Without this, receiving clients get raw binary data (a Blob) instead
+    // of the readable text that was originally sent.
+    const messageAsText = message.toString();
+
     wss.clients.forEach((otherClient) => {
         const isNotTheSender = otherClient !== sendingClient;
         const isStillConnected = otherClient.readyState === otherClient.OPEN;
 
         if (isNotTheSender && isStillConnected) {
-            otherClient.send(message);
+            otherClient.send(messageAsText);
         }
     });
 }
