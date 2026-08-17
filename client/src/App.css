@@ -44,3 +44,50 @@
 .username-badge strong {
   color: #58a6ff;
 }
+
+.workspace {
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-start;
+  margin-top: 1.5rem;
+}
+
+.room-presence {
+  width: 200px;
+  padding: 1rem;
+  background-color: #1e1e1e;
+  border: 1px solid #3c3c3c;
+  border-radius: 6px;
+  text-align: left;
+}
+
+.room-presence-heading {
+  margin: 0 0 0.75rem 0;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #9ca3af;
+}
+
+.room-presence-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.room-presence-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #d4d4d4;
+  font-size: 0.9rem;
+}
+
+.typing-indicator {
+  color: #58a6ff;
+  font-size: 0.8rem;
+  font-style: italic;
+}

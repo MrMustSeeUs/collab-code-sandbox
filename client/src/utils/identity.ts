@@ -17,13 +17,13 @@ const ROOM_QUERY_PARAM = 'room';
 const USERNAME_STORAGE_KEY = 'collab-sandbox-username';
 
 const ADJECTIVES = [
-  'Swift', 'Clever', 'Quiet', 'Bold', 'Bright', 'Sneaky', 'Curious', 'Calm',
-  'Fuzzy', 'Nimble', 'Witty', 'Brave', 'Lucky', 'Gentle', 'Sharp',
+    'Swift', 'Clever', 'Quiet', 'Bold', 'Bright', 'Sneaky', 'Curious', 'Calm',
+    'Fuzzy', 'Nimble', 'Witty', 'Brave', 'Lucky', 'Gentle', 'Sharp',
 ];
 
 const NOUNS = [
-  'Falcon', 'Otter', 'Panther', 'Sparrow', 'Fox', 'Wolf', 'Badger', 'Heron',
-  'Lynx', 'Raven', 'Tiger', 'Dolphin', 'Hawk', 'Wren', 'Puma',
+    'Falcon', 'Otter', 'Panther', 'Sparrow', 'Fox', 'Wolf', 'Badger', 'Heron',
+    'Lynx', 'Raven', 'Tiger', 'Dolphin', 'Hawk', 'Wren', 'Puma',
 ];
 
 // -----------------------------------------------------------------------------
@@ -32,7 +32,7 @@ const NOUNS = [
 // WHY IT EXISTS: Shared building block for room IDs and fallback usernames.
 // -----------------------------------------------------------------------------
 function generateRandomId(length: number): string {
-  return Math.random().toString(36).substring(2, 2 + length);
+    return Math.random().toString(36).substring(2, 2 + length);
 }
 
 // -----------------------------------------------------------------------------
@@ -46,18 +46,18 @@ function generateRandomId(length: number): string {
 //            history.
 // -----------------------------------------------------------------------------
 export function getOrCreateRoomId(): string {
-  const url = new URL(window.location.href);
-  const existingRoomId = url.searchParams.get(ROOM_QUERY_PARAM);
+    const url = new URL(window.location.href);
+    const existingRoomId = url.searchParams.get(ROOM_QUERY_PARAM);
 
-  if (existingRoomId) {
-    return existingRoomId;
-  }
+    if (existingRoomId) {
+        return existingRoomId;
+    }
 
-  const newRoomId = generateRandomId(8);
-  url.searchParams.set(ROOM_QUERY_PARAM, newRoomId);
-  window.history.replaceState({}, '', url.toString());
+    const newRoomId = generateRandomId(8);
+    url.searchParams.set(ROOM_QUERY_PARAM, newRoomId);
+    window.history.replaceState({}, '', url.toString());
 
-  return newRoomId;
+    return newRoomId;
 }
 
 // -----------------------------------------------------------------------------
@@ -70,19 +70,19 @@ export function getOrCreateRoomId(): string {
 //            throws, so the app still works in restrictive browser modes.
 // -----------------------------------------------------------------------------
 export function getOrCreateUsername(): string {
-  const adjective = ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)];
-  const noun = NOUNS[Math.floor(Math.random() * NOUNS.length)];
-  const fallbackUsername = `${adjective} ${noun}`;
+    const adjective = ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)];
+    const noun = NOUNS[Math.floor(Math.random() * NOUNS.length)];
+    const fallbackUsername = `${adjective} ${noun}`;
 
-  try {
-    const storedUsername = window.localStorage.getItem(USERNAME_STORAGE_KEY);
-    if (storedUsername) {
-      return storedUsername;
+    try {
+        const storedUsername = window.localStorage.getItem(USERNAME_STORAGE_KEY);
+        if (storedUsername) {
+            return storedUsername;
+        }
+
+        window.localStorage.setItem(USERNAME_STORAGE_KEY, fallbackUsername);
+        return fallbackUsername;
+    } catch {
+        return fallbackUsername;
     }
-
-    window.localStorage.setItem(USERNAME_STORAGE_KEY, fallbackUsername);
-    return fallbackUsername;
-  } catch {
-    return fallbackUsername;
-  }
 }
