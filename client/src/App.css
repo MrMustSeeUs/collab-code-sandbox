@@ -34,3 +34,13 @@
 .code-editor:focus {
   border-color: #007acc;
 }
+
+.username-badge {
+  margin-top: 0.5rem;
+  color: #9ca3af;
+  font-size: 0.95rem;
+}
+
+.username-badge strong {
+  color: #58a6ff;
+}
