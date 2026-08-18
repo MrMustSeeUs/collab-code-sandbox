@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<!--
+=============================================================================
+FILE: client/public/sandbox.html
+PURPOSE: Isolated execution environment for running user-submitted
+         JavaScript code safely. Loaded inside a sandboxed iframe with no
+         access to the parent page. Receives code via postMessage, executes
+         it, captures console output, and reports results back to the
+         parent via postMessage.
+AUTHOR: Abraham Macias
+DATE: 2026-08-18
+DEPENDENCIES: None (vanilla HTML/JS)
+EDGE CASES: Errors thrown by the executed code are caught and reported as
+            output rather than crashing the sandbox; console.log calls are
+            intercepted and collected instead of appearing in the browser's
+            real developer console.
+=============================================================================
+-->
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Sandbox</title>
+</head>
+
+<body>
+    <script>
+        // -------------------------------------------------------------------
+        // Intercept console.log so output can be captured and sent back to
+        // the parent page, instead of only appearing in this hidden iframe's
+        // own developer console where the user would never see it.
+        // -------------------------------------------------------------------
+        const capturedLogs = [];
+
+        console.log = (...args) => {
+            const formattedLine = args
+                .map((arg) => (typeof arg === 'object' ? JSON.stringify(arg) : String(arg)))
+                .join(' ');
+            capturedLogs.push(formattedLine);
+        };
+
+        // -------------------------------------------------------------------
+        // Listen for code sent from the parent page. On receipt, run it,
+        // collect any output or errors, and report the result back.
+        // -------------------------------------------------------------------
+        window.addEventListener('message', (event) => {
+            const { code } = event.data;
+
+            capturedLogs.length = 0;
+
+            try {
+                // eslint-disable-next-line no-eval
+                eval(code);
+                window.parent.postMessage({ type: 'executionResult', output: capturedLogs.join('\n'), error: null }, '*');
+            } catch (error) {
+                window.parent.postMessage({ type: 'executionResult', output: capturedLogs.join('\n'), error: error.message }, '*');
+            }
+        });
+    </script>
+</body>
+
+</html>
