@@ -1,14 +1,16 @@
 // =============================================================================
 // FILE: client/src/OutputPanel.tsx
-// PURPOSE: Hosts a sandboxed iframe used to safely execute JavaScript code
-//          submitted from the editor, and displays the resulting output
-//          or error message.
+// PURPOSE: Hosts a sandboxed iframe used to safely execute code submitted
+//          from the editor (JavaScript or Python), and displays the
+//          resulting output, status, or error message.
 // AUTHOR: Abraham Macias
-// DATE: 2026-08-18
-// DEPENDENCIES: React (useRef, useEffect, useImperativeHandle, forwardRef)
-// EDGE CASES: Ignores postMessage events from origins/sources other than
-//             its own sandbox iframe, to avoid processing unrelated
-//             browser messages.
+// DATE: 2026-08-19
+// DEPENDENCIES: React (useRef, useEffect, useState, useImperativeHandle,
+//                forwardRef)
+// EDGE CASES: Ignores postMessage events that don't match this component's
+//             expected message shapes, to avoid processing unrelated
+//             browser messages. Status messages (e.g. "Loading Python
+//             runtime…") are shown only while no result has arrived yet.
 // =============================================================================
 
 import { useRef, useEffect, useState, useImperativeHandle, forwardRef } from 'react';
@@ -16,34 +18,34 @@ import { useRef, useEffect, useState, useImperativeHandle, forwardRef } from 're
 // -----------------------------------------------------------------------------
 // TYPE: OutputPanelHandle
 // WHAT: The methods this component exposes to its parent via a ref.
-// WHY IT EXISTS: Lets a parent component (CodeEditor's sibling controls)
-//                trigger execution without owning the iframe directly.
 // -----------------------------------------------------------------------------
 export type OutputPanelHandle = {
-    runCode: (code: string) => void;
+    runCode: (code: string, language: 'javascript' | 'python') => void;
 };
 
 // -----------------------------------------------------------------------------
 // COMPONENT: OutputPanel
 // WHAT: Renders a hidden sandboxed iframe plus a visible output display.
-// WHY IT EXISTS: Isolates code-execution concerns from the editor itself,
-//                so the execution mechanism can later be extended (e.g.
-//                to support Python) without touching editor code.
-// EDGE CASE: forwardRef + useImperativeHandle is used so the parent can
-//            call runCode() imperatively, since sending a postMessage
-//            isn't naturally expressed as a prop change.
+// WHY IT EXISTS: Isolates code-execution concerns from the editor itself.
 // -----------------------------------------------------------------------------
 const OutputPanel = forwardRef<OutputPanelHandle>((_props, ref) => {
     const iframeRef = useRef<HTMLIFrameElement>(null);
     const [output, setOutput] = useState('');
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
     useEffect(() => {
         function handleMessage(event: MessageEvent) {
-            if (event.data?.type !== 'executionResult') return;
+            if (event.data?.type === 'status') {
+                setStatusMessage(event.data.message);
+                return;
+            }
 
-            setOutput(event.data.output);
-            setErrorMessage(event.data.error);
+            if (event.data?.type === 'executionResult') {
+                setStatusMessage(null);
+                setOutput(event.data.output);
+                setErrorMessage(event.data.error);
+            }
         }
 
         window.addEventListener('message', handleMessage);
@@ -51,24 +53,27 @@ const OutputPanel = forwardRef<OutputPanelHandle>((_props, ref) => {
     }, []);
 
     useImperativeHandle(ref, () => ({
-        runCode(code: string) {
+        runCode(code: string, language: 'javascript' | 'python') {
             setOutput('');
             setErrorMessage(null);
-            iframeRef.current?.contentWindow?.postMessage({ code }, '*');
+            setStatusMessage(null);
+            iframeRef.current?.contentWindow?.postMessage({ code, language }, '*');
         },
     }));
+
+    const displayText = statusMessage ?? errorMessage ?? output ?? '';
+    const isError = Boolean(errorMessage) && !statusMessage;
 
     return (
         <div className="output-panel">
             <h2 className="output-panel-heading">Output</h2>
-            <pre className={errorMessage ? 'output-content output-error' : 'output-content'}>
-                {errorMessage ?? output ?? ''}
-                {!errorMessage && !output && 'Run your code to see output here.'}
+            <pre className={isError ? 'output-content output-error' : 'output-content'}>
+                {displayText || 'Run your code to see output here.'}
             </pre>
             <iframe
                 ref={iframeRef}
                 src="/sandbox.html"
-                sandbox="allow-scripts"
+                sandbox="allow-scripts allow-same-origin"
                 title="Code execution sandbox"
                 className="execution-sandbox"
             />

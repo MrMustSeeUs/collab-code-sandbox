@@ -36,8 +36,8 @@ function App() {
 
   const outputPanelRef = useRef<OutputPanelHandle>(null);
 
-  function handleRunRequested() {
-    outputPanelRef.current?.runCode(codeText);
+  function handleRunRequested(language: 'javascript' | 'python') {
+    outputPanelRef.current?.runCode(codeText, language);
   }
 
   return (

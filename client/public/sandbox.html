@@ -2,18 +2,19 @@
 <!--
 =============================================================================
 FILE: client/public/sandbox.html
-PURPOSE: Isolated execution environment for running user-submitted
-         JavaScript code safely. Loaded inside a sandboxed iframe with no
-         access to the parent page. Receives code via postMessage, executes
-         it, captures console output, and reports results back to the
-         parent via postMessage.
+PURPOSE:Isolated execution environment for running user-submitted code
+        safely. Supports both JavaScript (native eval) and Python (via
+        Pyodide, a WebAssembly-compiled Python interpreter). Loaded inside
+        a sandboxed iframe with no access to the parent page. Receives
+        code and a target language via postMessage, executes accordingly,
+        and reports captured output or errors back to the parent.
 AUTHOR: Abraham Macias
-DATE: 2026-08-18
-DEPENDENCIES: None (vanilla HTML/JS)
-EDGE CASES: Errors thrown by the executed code are caught and reported as
-            output rather than crashing the sandbox; console.log calls are
-            intercepted and collected instead of appearing in the browser's
-            real developer console.
+DATE: 2026-08-19
+DEPENDENCIES: Pyodide (loaded from CDN at runtime, only when Python execution is first requested)
+EDGE CASES: Pyodide is loaded lazily and only once; subsequent Python runs
+            reuse the already-initialized interpreter rather than reloading
+            it. Errors from either language are caught and reported as
+            output rather than crashing the sandbox.
 =============================================================================
 -->
 <html lang="en">
@@ -25,11 +26,6 @@ EDGE CASES: Errors thrown by the executed code are caught and reported as
 
 <body>
     <script>
-        // -------------------------------------------------------------------
-        // Intercept console.log so output can be captured and sent back to
-        // the parent page, instead of only appearing in this hidden iframe's
-        // own developer console where the user would never see it.
-        // -------------------------------------------------------------------
         const capturedLogs = [];
 
         console.log = (...args) => {
@@ -40,17 +36,74 @@ EDGE CASES: Errors thrown by the executed code are caught and reported as
         };
 
         // -------------------------------------------------------------------
-        // Listen for code sent from the parent page. On receipt, run it,
-        // collect any output or errors, and report the result back.
+        // STATE: pyodideInstance
+        // WHAT: Holds the initialized Pyodide interpreter once loaded.
+        // WHY IT EXISTS: Loading Pyodide is slow (a full interpreter download);
+        //                caching the instance means it only happens once per
+        //                page load, not on every Python execution.
         // -------------------------------------------------------------------
-        window.addEventListener('message', (event) => {
-            const { code } = event.data;
+        let pyodideInstance = null;
+
+        // -------------------------------------------------------------------
+        // FUNCTION: getPyodide
+        // WHAT: Returns the cached Pyodide instance, loading and initializing
+        //       it on first use.
+        // WHY IT EXISTS: Centralizes lazy-loading so Python execution code
+        //                doesn't need to handle initialization itself.
+        // -------------------------------------------------------------------
+        async function getPyodide() {
+            if (pyodideInstance) {
+                return pyodideInstance;
+            }
+
+            window.parent.postMessage({ type: 'status', message: 'Loading Python runtime…' }, '*');
+
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/pyodide/v0.26.1/full/pyodide.js';
+            document.head.appendChild(script);
+
+            await new Promise((resolve) => { script.onload = resolve; });
+
+            pyodideInstance = await loadPyodide();
+
+            pyodideInstance = await loadPyodide();
+            pyodideInstance.setStdout({ batched: (text) => capturedLogs.push(text) });
+
+            return pyodideInstance;
+        }
+
+        // -------------------------------------------------------------------
+        // FUNCTION: runJavaScript
+        // WHAT: Executes JavaScript code directly via eval.
+        // -------------------------------------------------------------------
+        function runJavaScript(code) {
+            // eslint-disable-next-line no-eval
+            eval(code);
+        }
+
+        // -------------------------------------------------------------------
+        // FUNCTION: runPython
+        // WHAT: Executes Python code using the Pyodide interpreter.
+        // EDGE CASE: Loads Pyodide on demand if this is the first Python
+        //            execution in this session.
+        // -------------------------------------------------------------------
+        async function runPython(code) {
+            const pyodide = await getPyodide();
+            await pyodide.runPythonAsync(code);
+        }
+
+        window.addEventListener('message', async (event) => {
+            const { code, language } = event.data;
+            if (!language) return;
 
             capturedLogs.length = 0;
 
             try {
-                // eslint-disable-next-line no-eval
-                eval(code);
+                if (language === 'python') {
+                    await runPython(code);
+                } else {
+                    runJavaScript(code);
+                }
                 window.parent.postMessage({ type: 'executionResult', output: capturedLogs.join('\n'), error: null }, '*');
             } catch (error) {
                 window.parent.postMessage({ type: 'executionResult', output: capturedLogs.join('\n'), error: error.message }, '*');
